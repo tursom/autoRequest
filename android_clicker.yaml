@@ -1,0 +1,45 @@
+screen:
+  width: 2400
+  height: 1080
+motions:
+  - name: fight
+    times: -1
+    actions:
+      - action: click
+        point: 2100,1000
+      #- action: delay
+      #  seconds: 1
+      - action: click
+        point: 1900,700
+  - name: jt8-1
+    actions:
+      - action: click
+        point: 1250,550
+      - action: delay
+        seconds: 1
+      - action: click
+        point: 2100,1000
+      - action: delay
+        seconds: 1
+      - action: click
+        point: 1900,700
+      - action: delay
+        seconds: 10
+      - action: click
+        point: 2100,100
+      - action: delay
+        seconds: 10
+      - action: delay
+        seconds: 10
+      - action: delay
+        seconds: 10
+      - action: screen
+        name: jt8-1 /d.png
+      - action: delay
+        seconds: 10
+#      - action: screen
+#        name: jt8-1 /d.png
+      - action: click
+        point: 2100,100
+      - action: delay
+        seconds: 5
