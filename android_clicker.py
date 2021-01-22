@@ -12,25 +12,25 @@ __global_count = 0
 
 
 async def delay(action):
-    delay = 0.0
+    delay_seconds = 0.0
     if "second" in action:
-        delay += float(action["second"])
+        delay_seconds += float(action["second"])
     if "seconds" in action:
-        delay += float(action["seconds"])
+        delay_seconds += float(action["seconds"])
     if "minute" in action:
-        delay += float(action["minute"]) * 60
+        delay_seconds += float(action["minute"]) * 60
     if "minutes" in action:
-        delay += float(action["minutes"]) * 60
+        delay_seconds += float(action["minutes"]) * 60
     if "hour" in action:
-        delay += float(action["hour"]) * 60 * 60
+        delay_seconds += float(action["hour"]) * 60 * 60
     if "hours" in action:
-        delay += float(action["hours"]) * 60 * 60
+        delay_seconds += float(action["hours"]) * 60 * 60
     if "day" in action:
-        delay += float(action["day"]) * 60 * 60 * 24
+        delay_seconds += float(action["day"]) * 60 * 60 * 24
     if "days" in action:
-        delay += float(action["days"]) * 60 * 60 * 24
-    print(f"delay {delay} seconds")
-    await asyncio.sleep(delay)
+        delay_seconds += float(action["days"]) * 60 * 60 * 24
+    print(f"delay {delay_seconds} seconds")
+    await asyncio.sleep(delay_seconds)
     return True
 
 
@@ -50,19 +50,23 @@ def click(action, device: ppadb.device.Device, config):
     return True
 
 
-def screen_cap(action, device: ppadb.device.Device, time=None):
+def screen_capture(action, device: ppadb.device.Device):
     name = "screen_cap.png"
+    global __global_count
     if "name" in action:
         name = str(action["name"])
         if "/d" in name:
             time_str = datetime.now().strftime("%Y-%m-%d %H.%M.%S")
             name = name.replace("/d", time_str)
         if "/c" in name:
-            global __global_count
             __global_count += 1
             name = name.replace("/c", str(__global_count))
+        if "/n" in name:
+            __global_count += 1
+            name = name.replace("/n", str(__global_count))
 
     screen_cap = device.screencap()
+    print(len(screen_cap))
     screen_file = open(name, "wb")
     screen_file.write(screen_cap)
     screen_file.close()
@@ -76,49 +80,67 @@ async def do_actions(actions, device: ppadb.device.Device, config):
         success = False
         if action_type == "delay":
             success = await delay(action)
+        elif action_type == "sleep":
+            success = await delay(action)
         elif action_type == "click":
             success = click(action, device, config)
         elif action_type == "screen":
-            success = screen_cap(action, device)
+            success = screen_capture(action, device)
         if not success:
             print(f"action {action_type} failed")
+            return False
+    return True
 
 
 async def loop(motion, device: ppadb.device.Device, config):
     if "actions" not in motion:
         return
-    delay = 0.0
+    delay_seconds = 0.0
     times = -1
+    max_retry_times = 3
     if "delay" in motion:
-        delay = float(motion["delay"])
+        delay_seconds = float(motion["delay"])
     if "timeunit" in motion:
         timeunit = motion["timeunit"]
         if timeunit == "seconds" or timeunit == "second":
-            delay = delay * 60
+            delay_seconds = delay_seconds * 60
         elif timeunit == "minutes" or timeunit == "minute":
-            delay = delay * 60
+            delay_seconds = delay_seconds * 60
         elif timeunit == "hours" or timeunit == "hour":
-            delay = delay * 60 * 60
+            delay_seconds = delay_seconds * 60 * 60
         elif timeunit == "days" or timeunit == "day":
-            delay = delay * 60 * 60 * 24
+            delay_seconds = delay_seconds * 60 * 60 * 24
         else:
             print("unknown timeunit %s" % (timeunit,))
+
     if "times" in motion:
         times = int(motion["times"])
     elif "time" in motion:
         times = int(motion["time"])
 
+    if "maxRetry" in motion:
+        times = int(motion["maxRetry"])
+    elif "maxRetryTimes" in motion:
+        times = int(motion["maxRetryTimes"])
+    elif "retry" in motion:
+        times = int(motion["retry"])
+
     if times >= 0:
-        times -= 1
         while times > 0:
             times -= 1
-            await asyncio.sleep(delay)
-            if not do_actions(motion["actions"], device, config):
+            await asyncio.sleep(delay_seconds)
+            if not await do_actions(motion["actions"], device, config):
                 times += 1
+                max_retry_times -= 1
+                if max_retry_times == -1:
+                    return
     else:
         while True:
-            await asyncio.sleep(delay)
-            await do_actions(motion["actions"], device, config)
+            await asyncio.sleep(delay_seconds)
+            if not await do_actions(motion["actions"], device, config):
+                max_retry_times -= 1
+                if max_retry_times == -1:
+                    return
 
 
 class Object:
@@ -155,15 +177,16 @@ async def main(argv):
     if "screen" in config_data:
         screen = config_data["screen"]
         screen_cap = device.screencap()
-        img = cv2.imdecode(np.frombuffer(screen_cap, np.uint8), cv2.IMREAD_COLOR)
-        sp = img.shape
-        height = sp[0]
-        width = sp[1]
-        print(f'screen width: {width:d}, height: {height:d}')
-        if "width" in screen:
-            config.width = width / int(screen["width"])
-        if "height" in screen:
-            config.height = height / int(screen["height"])
+        if len(screen_cap) != 0:
+            img = cv2.imdecode(np.frombuffer(screen_cap, np.uint8), cv2.IMREAD_COLOR)
+            sp = img.shape
+            height = sp[0]
+            width = sp[1]
+            print(f'screen width: {width:d}, height: {height:d}')
+            if "width" in screen:
+                config.width = width / int(screen["width"])
+            if "height" in screen:
+                config.height = height / int(screen["height"])
 
     available_motions = argv[1:]
     if "motions" in config_data:

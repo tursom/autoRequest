@@ -43,3 +43,10 @@ motions:
         point: 2100,100
       - action: delay
         seconds: 5
+  - name: screen
+    time: 10
+    actions:
+      - action: screen
+        name: screen_cap_test/n.png
+      - action: sleep
+        seconds: 10
