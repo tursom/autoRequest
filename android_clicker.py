@@ -50,6 +50,37 @@ def click(action, device: ppadb.device.Device, config):
     return True
 
 
+def swipe(action, device: ppadb.device.Device, config):
+    from_str = str(action["point"]["from"]).split(',')
+    if len(from_str) < 2:
+        return False
+    to_str = str(action["point"]["to"]).split(',')
+    if len(to_str) < 2:
+        return False
+    from_point = [int(from_str[0]), int(from_str[1])]
+    to_point = [int(to_str[0]), int(to_str[1])]
+    if hasattr(config, "width"):
+        from_point[0] = int(from_point[0] * float(config.width))
+        to_point[0] = int(to_point[0] * float(config.width))
+    if hasattr(config, "height"):
+        from_point[1] = int(from_point[1] * float(config.height))
+        to_point[1] = int(to_point[1] * float(config.height))
+
+    using_time = 0
+    if "time" in action["point"]:
+        using_time = int(action["point"]["time"])
+    if using_time < 0:
+        using_time = 0
+
+    print(f"swipe {from_point} -> {to_point}, using {using_time} ms")
+    shell_cmd = f"input swipe {from_point[0]} {from_point[1]} {to_point[0]} {to_point[1]}"
+    if using_time != 0:
+        shell_cmd = f"{shell_cmd} {using_time}"
+    print(shell_cmd)
+    device.shell(shell_cmd)
+    return True
+
+
 def screen_capture(action, device: ppadb.device.Device):
     name = "screen_cap.png"
     global __global_count
@@ -84,6 +115,8 @@ async def do_actions(actions, device: ppadb.device.Device, config):
             success = await delay(action)
         elif action_type == "click":
             success = click(action, device, config)
+        elif action_type == "swipe":
+            success = swipe(action, device, config)
         elif action_type == "screen":
             success = screen_capture(action, device)
         if not success:

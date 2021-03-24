@@ -1,16 +1,31 @@
 screen:
-  width: 2400
-  height: 1080
+  width: 1024
+  height: 576
+#  width: 1080
+#  height: 2400
 motions:
+  - name: swipe_test
+    times: 1
+    actions:
+      - action: swipe
+        point:
+          from: 700,1500
+          to: 400,1000
+          time: 300
+      - action: swipe
+        point:
+          from: 400,1000
+          to: 700,500
+          time: 300
   - name: fight
     times: -1
     actions:
       - action: click
-        point: 2100,1000
+        point: 950,530
       #- action: delay
       #  seconds: 1
       - action: click
-        point: 1900,700
+        point: 851,365
   - name: jt8-1
     actions:
       - action: click
@@ -37,8 +52,8 @@ motions:
         name: jt8-1 /d.png
       - action: delay
         seconds: 10
-#      - action: screen
-#        name: jt8-1 /d.png
+      #      - action: screen
+      #        name: jt8-1 /d.png
       - action: click
         point: 2100,100
       - action: delay
