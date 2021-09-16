@@ -203,7 +203,11 @@ async def main(argv):
         device = devices[index]
     config.device = device
 
-    config_text = open("android_clicker.yaml").read()
+    if argv[1].endswith(".yaml") or argv[1].endswith(".yml"):
+        config_text = open(argv[1]).read()
+        argv = argv[1:]
+    else:
+        config_text = open("android_clicker.yaml").read()
     config_data = yaml.safe_load(config_text)
     print(config_data)
 
@@ -222,6 +226,7 @@ async def main(argv):
                 config.height = height / int(screen["height"])
 
     available_motions = argv[1:]
+
     if "motions" in config_data:
         motions = config_data["motions"]
         if len(available_motions) != 0:

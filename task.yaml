@@ -1,0 +1,15 @@
+name: task A
+process:
+  - type: conversations
+    conversations:
+      - npc: XXXXXX
+        options:
+          - {
+            "msg": "XXX",
+            "jmp": "2"
+          }
+          - msg: XXX
+      - npc: XXXX
+      - id: "2"
+        xxx: XXX
+  - xxx: XXX
